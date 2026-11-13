@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - SpaceHub</title>
+    <style>
+        :root { --primary: #6366f1; --background: #0f172a; --surface: #1e293b; --text: #f8fafc; --gray: #94a3b8; --border: #334155; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--background); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .box { background-color: var(--surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; }
+        h2 { margin-bottom: 24px; text-align: center; }
+        h2 span { color: var(--primary); }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-size: 14px; color: var(--gray); }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--background); color: var(--text); outline: none; }
+        input:focus { border-color: var(--primary); }
+        button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        button:hover { opacity: 0.9; }
+        .links { margin-top: 20px; text-align: center; font-size: 14px; color: var(--gray); }
+        .links a { color: var(--primary); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Criar Conta Space<span>Hub</span></h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label>Nome Completo</label>
+                <input type="text" id="name" required placeholder="Seu nome">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="email" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="password" required placeholder="Crie uma senha">
+            </div>
+            <button type="submit">Cadastrar</button>
+        </form>
+        <div class="links">
+            Já tem uma conta? <a href="login.html">Faça login</a><br><br>
+            <a href="index.html">← Voltar para o início</a>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = window.location.origin + '/api';
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(BASE_URL + '/cadastro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Cadastro realizado com sucesso! Faça seu login.');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(data.error || 'Erro ao cadastrar.');
+                }
+            } catch (error) {
+                alert('Erro de conexão com o servidor.');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceHub - Cadastro e Reservas</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --gray: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        h1 span {
+            color: var(--primary);
+        }
+
+        .auth-buttons button {
+            background-color: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-left: 10px;
+            transition: 0.2s;
+        }
+
+        .auth-buttons button.primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .auth-buttons button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-price {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .card-price span {
+            color: var(--gray);
+            font-weight: 400;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Space<span>Hub</span></h1>
+            <div class="auth-buttons" id="authSection">
+                <button onclick="location.href='login.html'">Login</button>
+                <button class="primary" onclick="location.href='cadastro.html'">Cadastrar</button>
+            </div>
+        </header>
+
+        <main>
+            <h2 style="margin-bottom: 24px; font-weight: 600;">Imóveis Disponíveis</h2>
+            <div class="grid" id="spacesGrid"></div>
+        </main>
+    </div>
+
+    <script>
+        // Detecta automaticamente se está no seu computador ou na nuvem da Railway
+        const BASE_URL = window.location.origin + '/api';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadSpaces();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const authSection = document.getElementById('authSection');
+
+            if (token) {
+                authSection.innerHTML = `
+                    <span style="margin-right: 15px; color: var(--gray);">Olá, ${user.name || 'Usuário'}</span>
+                    <button onclick="logout()" style="border-color: #ef4444; color: #ef4444;">Sair</button>
+                `;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+
+        async function loadSpaces() {
+            const grid = document.getElementById('spacesGrid');
+            try {
+                const response = await fetch(BASE_URL + '/imoveis');
+                if (!response.ok) {
+                    throw new Error('Status ' + response.status);
+                }
+
+                const spaces = await response.json();
+
+                if (!spaces || spaces.length === 0) {
+                    grid.innerHTML =
+                        '<p style="color: var(--gray); grid-column: 1/-1; text-align: center;">Nenhum imóvel disponível no momento.</p>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                spaces.forEach(space => {
+                    const imgFallback = 'https://unsplash.com';
+                    const imageUrl = space.image_url || imgFallback;
+
+                    grid.innerHTML += `
+                        <div class="card" onclick="reservar(${space.id}, '${space.title}', ${space.price_per_night})">
+                            <img src="${imageUrl}" alt="${space.title}" onerror="this.src='${imgFallback}'">
+                            <div class="card-content">
+                                <div class="card-title">${space.title}</div>
+                                <p style="color: var(--gray); font-size: 14px; line-height: 1.5; height: 42px; overflow: hidden;">
+                                    ${space.description || 'Espaço pronto para uso.'}
+                                </p>
+                                <div class="card-price">
+                                    <span>Diária</span>
+                                    <div>R$ ${Number(space.price_per_night).toFixed(2)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                alert('Erro ao carregar imóveis: ' + error.message);
+            }
+        }
+
+        async function reservar(spaceId, title, price) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Você precisa fazer login antes de reservar um espaço!');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const confirmar = confirm(
+                `Deseja confirmar a reserva do espaço "${title}" por R$ ${Number(price).toFixed(2)}?`);
+            if (!confirmar) return;
+
+            try {
+                const hoje = new Date().toISOString().split('T')[0];
+                const dataAmanha = new Date();
+                dataAmanha.setDate(dataAmanha.getDate() + 1);
+                const amanha = dataAmanha.toISOString().split('T');
+                const response = await fetch(BASE_URL + '/reservas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        space_id: spaceId,
+                        check_in: hoje,
+                        check_out: amanha,
+                        total_price: price
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Reserva realizada com sucesso!');
+                } else {
+                    const data = await response.json();
+                    alert('Erro ao reservar: ' + (data.error || 'Falha na requisição'));
+                }
+            } catch (error) {
+                alert('Erro de conexão ao tentar reservar.');
+            }
+        }
+    </script>
+</body>
+
+</html>
